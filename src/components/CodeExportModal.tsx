@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlexusConfig } from '../types';
+import { PlexusConfig, WebsiteConfig } from '../types';
 import { generateStandaloneHtml } from '../utils/generateHtmlCode';
 import { Check, Copy, Download, X, Code2, Sparkles, BookOpen, Layers, Sliders } from 'lucide-react';
 
@@ -7,12 +7,14 @@ interface CodeExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   config: PlexusConfig;
+  siteConfig?: WebsiteConfig;
 }
 
 export const CodeExportModal: React.FC<CodeExportModalProps> = ({
   isOpen,
   onClose,
   config,
+  siteConfig,
 }) => {
   const [copied, setCopied] = useState(false);
   const [includeControlPanel, setIncludeControlPanel] = useState(true);
@@ -20,7 +22,7 @@ export const CodeExportModal: React.FC<CodeExportModalProps> = ({
 
   if (!isOpen) return null;
 
-  const fullHtmlCode = generateStandaloneHtml(config, { includeControlPanel });
+  const fullHtmlCode = generateStandaloneHtml(config, siteConfig, { includeControlPanel });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullHtmlCode);

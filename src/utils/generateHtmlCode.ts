@@ -1,10 +1,22 @@
-import { PlexusConfig } from '../types';
+import { PlexusConfig, WebsiteConfig } from '../types';
 import { DEFAULT_BOTANICAL_SVG } from '../data/botanicalLogo';
+import { DEFAULT_WEBSITE_CONFIG } from '../data/presets';
 
 export function generateStandaloneHtml(
   config: PlexusConfig,
-  options: { includeControlPanel?: boolean } = { includeControlPanel: true }
+  siteConfigOrOptions?: WebsiteConfig | { includeControlPanel?: boolean },
+  maybeOptions?: { includeControlPanel?: boolean }
 ): string {
+  let siteConfig: WebsiteConfig = DEFAULT_WEBSITE_CONFIG;
+  let options: { includeControlPanel?: boolean } = { includeControlPanel: true };
+
+  if (siteConfigOrOptions && 'siteName' in siteConfigOrOptions) {
+    siteConfig = siteConfigOrOptions as WebsiteConfig;
+    if (maybeOptions) options = maybeOptions;
+  } else if (siteConfigOrOptions && 'includeControlPanel' in siteConfigOrOptions) {
+    options = siteConfigOrOptions as { includeControlPanel?: boolean };
+  }
+
   const includePanel = options.includeControlPanel !== false;
   const logoColor = config.logoColor || config.nodeColor;
   const logoSize = config.logoSize || 380;
@@ -27,7 +39,6 @@ export function generateStandaloneHtml(
 
   const logoStyle = config.showLogo
     ? `
-    /* طبقة الشعار المدمج في الخلفية خلف المحتوى وأمام الكانفاس */
     .plexus-logo-backdrop {
       position: fixed;
       top: 50%;
@@ -62,14 +73,14 @@ export function generateStandaloneHtml(
       100% { transform: translate(-50%, -50%) scale(1.02); }
     }`
     : '';
+
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>خلفية شبكة الجسيمات الهندسية | Interactive Plexus Canvas</title>
+  <title>${siteConfig.siteName} | ${siteConfig.tagline}</title>
   <style>
-    /* إعادة الضبط وضمان ملء الشاشة بنعومة */
     * {
       margin: 0;
       padding: 0;
@@ -77,13 +88,14 @@ export function generateStandaloneHtml(
     }
     html, body {
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
       background-color: ${config.bgColor};
+      color: #f1f5f9;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
     }
 
-    /* لوحة الكانفاس تشغل كامل الخلفية */
     #plexus-canvas {
       position: fixed;
       top: 0;
@@ -95,22 +107,85 @@ export function generateStandaloneHtml(
       cursor: crosshair;
     }
 
-    /* نموذج محتوى اختياري فوق الخلفية (يمكنك حذفه أو تغييره لموقعك) */
-    .hero-content {
+    /* Website Container */
+    .website-wrapper {
       position: relative;
       z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(10, 15, 25, 0.45);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .site-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: ${config.nodeColor}25;
+      border: 1px solid ${config.nodeColor}60;
+      color: ${config.nodeColor};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .brand-text p {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover {
+      color: ${config.nodeColor};
+    }
+
+    /* Hero Section */
+    .hero-section {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      color: #ffffff;
       text-align: center;
-      pointer-events: none; /* يسمح بالتفاعل مع الكانفاس خلفه */
-      padding: 24px;
-    }
-    .hero-content * {
-      pointer-events: auto;
+      min-height: 75vh;
+      padding: 60px 24px 40px;
+      max-width: 900px;
+      margin: 0 auto;
     }
     .hero-badge {
       display: inline-flex;
@@ -119,58 +194,215 @@ export function generateStandaloneHtml(
       padding: 6px 16px;
       border-radius: 9999px;
       font-size: 13px;
-      font-weight: 500;
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      color: #fbbf24;
+      font-weight: 600;
+      background: ${config.nodeColor}18;
+      border: 1px solid ${config.nodeColor}40;
+      color: ${config.nodeColor};
       margin-bottom: 20px;
       backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .hero-badge:hover {
+      transform: scale(1.04);
     }
     .hero-title {
-      font-size: clamp(2rem, 5vw, 3.75rem);
-      font-weight: 800;
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 900;
       letter-spacing: -0.02em;
-      line-height: 1.2;
-      max-width: 800px;
-      margin-bottom: 16px;
-      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 18px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .hero-subtitle {
-      font-size: clamp(1rem, 2vw, 1.25rem);
-      color: #94a3b8;
-      max-width: 580px;
-      line-height: 1.6;
-      margin-bottom: 32px;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: #cbd5e1;
+      max-width: 650px;
+      line-height: 1.65;
+      margin-bottom: 30px;
     }
-    .hero-btn {
+    .hero-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .btn-primary {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      padding: 14px 28px;
+      gap: 8px;
+      padding: 13px 28px;
       border-radius: 12px;
       background: ${config.nodeColor};
-      color: #000000;
-      font-weight: 700;
-      font-size: 15px;
+      color: #050b14;
+      font-weight: 800;
+      font-size: 14px;
       text-decoration: none;
-      transition: all 0.25s ease;
-      box-shadow: 0 0 24px ${config.nodeColor}55;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 10px 25px -5px ${config.nodeColor}66;
+      transition: all 0.2s;
     }
-    .hero-btn:hover {
+    .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 0 32px ${config.nodeColor}88;
+      filter: brightness(1.1);
     }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 26px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      transform: translateY(-2px);
+    }
+
+    /* On-Page Quick Playground Bar */
+    .playground-bar {
+      margin-top: 40px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
+    .fx-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f8fafc;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .fx-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(1.03);
+    }
+
+    /* Features Grid */
+    .features-section {
+      max-width: 1050px;
+      margin: 40px auto 60px;
+      padding: 0 24px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      padding: 24px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      transition: all 0.3s;
+    }
+    .feature-card:hover {
+      border-color: ${config.nodeColor}50;
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: ${config.nodeColor}20;
+      color: ${config.nodeColor};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+
+    /* Stats Section */
+    .stats-section {
+      max-width: 1050px;
+      margin: 0 auto 60px;
+      padding: 0 24px;
+    }
+    .stats-card {
+      padding: 28px;
+      border-radius: 24px;
+      background: rgba(10, 16, 30, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 24px;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 32px;
+      font-weight: 900;
+      color: ${config.nodeColor};
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* Footer */
+    .site-footer {
+      margin-top: auto;
+      padding: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(5, 8, 15, 0.6);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #64748b;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
 ${logoStyle}
+
 ${
   includePanel
     ? `
-    /* لوحة التحكم التفاعلية المدمجة لموقعك */
+    /* Floating Widget Button */
     #plexus-control-toggle {
       position: fixed;
       top: 20px;
-      right: 20px;
+      left: 20px;
       z-index: 1000;
       display: inline-flex;
       align-items: center;
@@ -179,7 +411,6 @@ ${
       border-radius: 14px;
       background: rgba(18, 24, 38, 0.88);
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       color: #ffffff;
       font-size: 13px;
@@ -197,14 +428,13 @@ ${
     #plexus-panel {
       position: fixed;
       top: 20px;
-      right: 20px;
-      width: 330px;
+      left: 20px;
+      width: 340px;
       max-width: calc(100vw - 40px);
       max-height: calc(100vh - 40px);
       z-index: 1001;
       background: rgba(14, 20, 30, 0.95);
       backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
@@ -212,26 +442,20 @@ ${
       display: none;
       flex-direction: column;
       overflow: hidden;
-      font-family: inherit;
     }
     #plexus-panel.active {
       display: flex;
-      animation: plexusFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes plexusFadeIn {
-      from { opacity: 0; transform: scale(0.96) translateY(-8px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
     }
     .plexus-panel-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.02);
     }
     .plexus-panel-title {
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 700;
       color: #ffffff;
       display: flex;
@@ -239,30 +463,29 @@ ${
       gap: 8px;
     }
     .plexus-panel-close {
-      background: transparent;
+      background: none;
       border: none;
       color: #94a3b8;
-      font-size: 18px;
       cursor: pointer;
+      font-size: 16px;
       padding: 4px 8px;
       border-radius: 6px;
-      line-height: 1;
     }
     .plexus-panel-close:hover {
       color: #ffffff;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.1);
     }
     .plexus-panel-body {
-      padding: 16px 18px;
+      padding: 16px 20px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
     .plexus-control-group {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
     }
     .plexus-control-label {
       display: flex;
@@ -294,10 +517,6 @@ ${
       background: rgba(255, 255, 255, 0.04);
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.06);
-      transition: background 0.15s;
-    }
-    .plexus-checkbox-label:hover {
-      background: rgba(255, 255, 255, 0.08);
     }
     .plexus-checkbox {
       accent-color: ${config.nodeColor};
@@ -305,24 +524,24 @@ ${
       width: 16px;
       height: 16px;
     }
-    .plexus-presets-grid {
+    .plexus-fx-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 6px;
     }
-    .plexus-preset-btn {
-      padding: 7px 4px;
+    .plexus-fx-btn {
+      padding: 8px 6px;
       border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       background: rgba(255, 255, 255, 0.05);
       color: #ffffff;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       text-align: center;
       transition: all 0.15s ease;
     }
-    .plexus-preset-btn:hover {
+    .plexus-fx-btn:hover {
       background: rgba(255, 255, 255, 0.15);
       border-color: ${config.nodeColor};
     }
@@ -356,7 +575,7 @@ ${
 </head>
 <body>
 
-  <!-- لوحة الرسم (Canvas) -->
+  <!-- لوحة الرسم التفاعلية (Canvas) -->
   <canvas id="plexus-canvas"></canvas>
 ${logoMarkup}
 
@@ -369,26 +588,26 @@ ${
   </button>
 
   <!-- لوحة التحكم التفاعلية الشاملة لموقعك -->
-  <aside id="plexus-panel" aria-label="لوحة تحكم خلفية الموقع">
+  <aside id="plexus-panel" aria-label="لوحة تحكم الموقع">
     <div class="plexus-panel-header">
       <div class="plexus-panel-title">
         <span>⚙️</span>
-        <span>لوحة التحكم بالموقع</span>
+        <span>لوحة التحكم لموقعك</span>
       </div>
       <button class="plexus-panel-close" id="plexus-close-btn" title="إغلاق">✕</button>
     </div>
     
     <div class="plexus-panel-body">
-      <!-- الثيمات السريعة -->
+      <!-- أزرار اللعب والتأثيرات الحركية -->
       <div class="plexus-control-group">
         <div class="plexus-control-label">
-          <span>🎨 ثيمات سريعة:</span>
+          <span>🎮 ألعاب حركية فورية:</span>
         </div>
-        <div class="plexus-presets-grid">
-          <button class="plexus-preset-btn" data-preset="turquoise">فيروزي</button>
-          <button class="plexus-preset-btn" data-preset="gold">ذهبي</button>
-          <button class="plexus-preset-btn" data-preset="cyber">سيبراني</button>
-          <button class="plexus-preset-btn" data-preset="matrix">ماتريكس</button>
+        <div class="plexus-fx-grid">
+          <button class="plexus-fx-btn" onclick="triggerPhysicsEffect('explode')">💥 انفجار</button>
+          <button class="plexus-fx-btn" onclick="triggerPhysicsEffect('vortex')">🌀 إعصار</button>
+          <button class="plexus-fx-btn" onclick="triggerPhysicsEffect('shockwave')">⚡ صعقة</button>
+          <button class="plexus-fx-btn" onclick="triggerPhysicsEffect('zeroG')">🪐 طفو</button>
         </div>
       </div>
 
@@ -434,15 +653,6 @@ ${
         <input type="checkbox" class="plexus-checkbox" id="ctrl-formLogo" ${config.formLogoWithParticles ? 'checked' : ''}>
       </label>
 
-      <!-- قوة انجذاب النقاط للشعار -->
-      <div class="plexus-control-group" id="group-formingStrength" style="${config.formLogoWithParticles ? '' : 'display:none;'}">
-        <div class="plexus-control-label">
-          <span>قوة تشكّل الشعار:</span>
-          <span class="plexus-control-val" id="val-logoFormingStrength">${Math.round((config.logoFormingStrength || 0.85) * 100)}%</span>
-        </div>
-        <input type="range" class="plexus-range" id="ctrl-logoFormingStrength" min="0.2" max="1" step="0.05" value="${config.logoFormingStrength || 0.85}">
-      </div>
-
       <!-- إظهار المثلثات -->
       <label class="plexus-checkbox-label">
         <span>المثلثات الشبكية (Mesh)</span>
@@ -465,31 +675,135 @@ ${
     : ''
 }
 
-  <!-- محتوى تجريبي فوق الخلفية (يمكنك استبداله بمحتوى موقعك) -->
-  <main class="hero-content">
-    <div class="hero-badge">
-      <span style="width: 8px; height: 8px; border-radius: 50%; background: ${config.nodeColor}; box-shadow: 0 0 8px ${config.nodeColor};"></span>
-      تأثير شبكي تفاعلي حي
-    </div>
-    <h1 class="hero-title">شبكة الجسيمات الهندسية التفاعلية</h1>
-    <p class="hero-subtitle">
-      حرك مؤشر الفأرة أو المس الشاشة لتشهد تفاعل الخطوط والمثلثات الهندسية الذكية المتصلة في الوقت الفعلي.
-    </p>
-    <a href="#explore" class="hero-btn">
-      استكشف موقعك هنا
-    </a>
-  </main>
+  <!-- المحتوى الكامل لموقعك المخصص -->
+  <div class="website-wrapper">
+    ${
+      siteConfig.showNavbar
+        ? `
+    <!-- شريط التنقل (Navbar) -->
+    <nav class="site-nav">
+      <div class="site-brand">
+        <div class="brand-icon">✦</div>
+        <div class="brand-text">
+          <h1>${siteConfig.siteName}</h1>
+          <p>${siteConfig.tagline}</p>
+        </div>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#hero">الرئيسية</a></li>
+        <li><a href="#game-section" style="color: ${config.nodeColor}; font-weight: 700;">🎮 Game</a></li>
+        ${siteConfig.showFeatures ? `<li><a href="#features">المميزات</a></li>` : ''}
+        ${siteConfig.showStats ? `<li><a href="#stats">الإحصائيات</a></li>` : ''}
+      </ul>
+      <a href="#cta" class="btn-primary" style="padding: 9px 18px; font-size: 13px;">${siteConfig.ctaPrimaryText}</a>
+    </nav>`
+        : ''
+    }
+
+    <!-- الواجهة الرئيسية (Hero Section) -->
+    <section id="hero" class="hero-section">
+      ${
+        siteConfig.heroBadge
+          ? `<div class="hero-badge" onclick="triggerPhysicsEffect('shockwave')">
+        <span>✦</span>
+        <span>${siteConfig.heroBadge}</span>
+      </div>`
+          : ''
+      }
+      <h2 class="hero-title">${siteConfig.heroTitle}</h2>
+      <p class="hero-subtitle">${siteConfig.heroSubtitle}</p>
+
+      <div class="hero-buttons">
+        <button class="btn-primary" onclick="triggerPhysicsEffect('explode')">${siteConfig.ctaPrimaryText}</button>
+        <button class="btn-secondary" onclick="triggerPhysicsEffect('vortex')">${siteConfig.ctaSecondaryText}</button>
+      </div>
+
+      <!-- شريط اللعب السريع بالحركة -->
+      <div class="playground-bar">
+        <span style="font-size: 12px; font-weight: 700; margin-left: 6px;">🎮 العب بالحركة:</span>
+        <button class="fx-btn" onclick="triggerPhysicsEffect('explode')">💥 انفجار</button>
+        <button class="fx-btn" onclick="triggerPhysicsEffect('vortex')">🌀 إعصار</button>
+        <button class="fx-btn" onclick="triggerPhysicsEffect('shockwave')">⚡ صعقة</button>
+        <button class="fx-btn" onclick="triggerPhysicsEffect('zeroG')">🪐 طفو حر</button>
+        <button class="fx-btn" onclick="triggerPhysicsEffect('assemble')" style="background: ${config.nodeColor}; color: #000;">🎯 تشكيل الشعار</button>
+      </div>
+    </section>
+
+    ${
+      siteConfig.showFeatures
+        ? `
+    <!-- قسم المميزات (Features) -->
+    <section id="features" class="features-section">
+      <div class="features-grid">
+        ${siteConfig.features
+          .map(
+            (f) => `
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>${f.title}</h3>
+          <p>${f.desc}</p>
+        </div>`
+          )
+          .join('')}
+      </div>
+    </section>`
+        : ''
+    }
+
+    ${
+      siteConfig.showStats
+        ? `
+    <!-- قسم الإحصائيات (Stats) -->
+    <section id="stats" class="stats-section">
+      <div class="stats-card">
+        ${siteConfig.stats
+          .map(
+            (s) => `
+        <div>
+          <div class="stat-num">${s.value}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>`
+          )
+          .join('')}
+      </div>
+    </section>`
+        : ''
+    }
+
+    <!-- قسم صفحة Game التفاعلية -->
+    <section id="game-section" style="max-width: 900px; margin: 40px auto 60px; padding: 32px 24px; border-radius: 28px; background: rgba(12, 18, 30, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(20px); text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.5);">
+      <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: ${config.nodeColor}22; color: ${config.nodeColor}; font-size: 12px; font-weight: 800; margin-bottom: 12px;">
+        <span>🎮</span>
+        <span>صفحة جيم (Game Zone)</span>
+      </div>
+      <h3 style="font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 10px;">Plexus Cosmic Arcade Game</h3>
+      <p style="font-size: 14px; color: #94a3b8; max-width: 540px; margin: 0 auto 24px;">العب الآن وتفاعل مع الجسيمات الكونية عبر نقرات الماوس أو اللمس، وأطلق نبضات الطاقة والإعصار الممتعة!</p>
+      
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+        <button onclick="triggerPhysicsEffect('explode')" class="btn-primary" style="padding: 12px 22px;">💥 إطلاق انفجار النجوم</button>
+        <button onclick="triggerPhysicsEffect('vortex')" class="btn-secondary" style="padding: 12px 22px;">🌀 تشغيل إعصار الفضاء</button>
+        <button onclick="triggerPhysicsEffect('shockwave')" class="btn-secondary" style="padding: 12px 22px;">⚡ إطلاق نبضة الصعقة</button>
+        <button onclick="triggerPhysicsEffect('assemble')" class="btn-primary" style="padding: 12px 22px; background: ${config.nodeColor}; color: #000;">🎯 تجميع الشعار الكوني</button>
+      </div>
+    </section>
+
+    ${
+      siteConfig.showFooter
+        ? `
+    <!-- الفوتر (Footer) -->
+    <footer class="site-footer">
+      <div>${siteConfig.siteName} — جميع الحقوق محفوظة © ${new Date().getFullYear()}</div>
+      <div>مدعوم بشبكة الجسيمات الهندسية التفاعلية Plexus</div>
+    </footer>`
+        : ''
+    }
+  </div>
 
   <script>
-    /**
-     * كود JavaScript خالص (Pure Vanilla JS) بدون أي مكتبات خارجية
-     * يدعم الشاشات عالية الدقة (Retina / 4K) وتفاعل الفأرة واللمس
-     */
     (function () {
       const canvas = document.getElementById('plexus-canvas');
       const ctx = canvas.getContext('2d');
 
-      // إعدادات المحاكاة
       const CONFIG = {
         particleCount: ${config.particleCount},
         maxDistance: ${config.maxDistance},
@@ -518,7 +832,6 @@ ${
       let particles = [];
       let animationFrameId = null;
 
-      // نقاط الهدف لتشكيل الشعار
       function getLogoTargetPoints(count) {
         const points = [];
         const circlePointsCount = Math.round(count * 0.35);
@@ -553,14 +866,12 @@ ${
 
       let logoTargets = getLogoTargetPoints(CONFIG.particleCount);
 
-      // إحداثيات مؤشر الفأرة
       const mouse = {
         x: null,
         y: null,
         radius: CONFIG.mouseDistance
       };
 
-      // فئة الجسيم المفرد
       class Particle {
         constructor(index, x, y) {
           this.index = index;
@@ -578,11 +889,9 @@ ${
         }
 
         update(time) {
-          // الحركة التلقائية
           this.x += this.vx;
           this.y += this.vy;
 
-          // تشكيل واصطفاف النقاط حول الشعار
           if (CONFIG.formLogoWithParticles && logoTargets.length > 0) {
             const tIdx = this.index % logoTargets.length;
             const targetNorm = logoTargets[tIdx];
@@ -604,7 +913,6 @@ ${
             this.vy *= 0.88;
           }
 
-          // الارتداد الناعم عن الحواف
           if (this.x < 0) {
             this.x = 0;
             this.vx *= -1;
@@ -620,7 +928,6 @@ ${
             this.vy *= -1;
           }
 
-          // تفاعل الفأرة (ابتعاد وهروب الجسيمات بنعومة)
           if (mouse.x !== null && mouse.y !== null) {
             const dx = mouse.x - this.x;
             const dy = mouse.y - this.y;
@@ -641,14 +948,12 @@ ${
             }
           }
 
-          // إعادة السرعة تدريجياً للسرعة الطبيعية
           const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
           if (currentSpeed > CONFIG.speed * 4) {
             this.vx = (this.vx / currentSpeed) * (CONFIG.speed * 4);
             this.vy = (this.vy / currentSpeed) * (CONFIG.speed * 4);
           }
 
-          // نبض خفيف لحجم النواة
           this.radius = this.baseRadius + Math.sin(time * 0.003 + this.pulseOffset) * 0.5;
         }
 
@@ -657,7 +962,6 @@ ${
           ctx.arc(this.x, this.y, Math.max(1, this.radius), 0, Math.PI * 2);
           ctx.fillStyle = CONFIG.nodeColor;
 
-          // توهج النواة
           if (CONFIG.glowIntensity > 0) {
             ctx.shadowBlur = CONFIG.glowIntensity;
             ctx.shadowColor = CONFIG.nodeColor;
@@ -668,40 +972,25 @@ ${
         }
       }
 
-      // رسم الشبكة الهندسية الخلفية كما في الفيديو
       function drawBackgroundGrid() {
         if (!CONFIG.showGrid) return;
-
         ctx.save();
         ctx.strokeStyle = CONFIG.gridColor;
         ctx.lineWidth = 1;
-
         const size = CONFIG.gridSize;
-        const offsetX = 0;
-        const offsetY = 0;
-
         ctx.beginPath();
-        for (let x = offsetX; x <= width; x += size) {
+        for (let x = 0; x <= width; x += size) {
           ctx.moveTo(x, 0);
           ctx.lineTo(x, height);
         }
-        for (let y = offsetY; y <= height; y += size) {
+        for (let y = 0; y <= height; y += size) {
           ctx.moveTo(0, y);
           ctx.lineTo(width, y);
         }
         ctx.stroke();
-
-        // نقاط تقاطع صغيرة خافتة
-        ctx.fillStyle = CONFIG.gridColor;
-        for (let x = offsetX; x <= width; x += size * 2) {
-          for (let y = offsetY; y <= height; y += size * 2) {
-            ctx.fillRect(x - 1, y - 1, 2, 2);
-          }
-        }
         ctx.restore();
       }
 
-      // تهيئة حجم الكانفاس والجسيمات
       function init() {
         dpr = window.devicePixelRatio || 1;
         width = window.innerWidth;
@@ -720,19 +1009,14 @@ ${
         }
       }
 
-      // الحلقة الرئيسية للرسم (Animation Loop)
       function animate(time) {
         ctx.clearRect(0, 0, width, height);
-
-        // 1. رسم خلفية الشبكة
         drawBackgroundGrid();
 
-        // 2. تحديث مواقع الجسيمات
         for (let i = 0; i < particles.length; i++) {
           particles[i].update(time);
         }
 
-        // 3. رسم المثلثات المترابطة (Wireframe Triangles) إذا اتصلت 3 نقاط
         if (CONFIG.showTriangles) {
           ctx.shadowBlur = 0;
           for (let i = 0; i < particles.length; i++) {
@@ -754,20 +1038,16 @@ ${
 
                     if (d3 < CONFIG.maxDistance) {
                       const avgDist = (d1 + d2 + d3) / 3;
-                      const alpha = (1 - avgDist / CONFIG.maxDistance) * 0.22;
-
+                      const alpha = (1 - avgDist / CONFIG.maxDistance) * 0.12;
                       ctx.beginPath();
                       ctx.moveTo(particles[i].x, particles[i].y);
                       ctx.lineTo(particles[j].x, particles[j].y);
                       ctx.lineTo(particles[k].x, particles[k].y);
                       ctx.closePath();
-
-                      ctx.fillStyle = hexOrRgbaToAlpha(CONFIG.triangleFillColor, alpha);
+                      ctx.fillStyle = CONFIG.triangleFillColor;
+                      ctx.globalAlpha = alpha;
                       ctx.fill();
-
-                      ctx.strokeStyle = hexOrRgbaToAlpha(CONFIG.lineColor, alpha * 1.5);
-                      ctx.lineWidth = 0.6;
-                      ctx.stroke();
+                      ctx.globalAlpha = 1.0;
                     }
                   }
                 }
@@ -776,8 +1056,8 @@ ${
           }
         }
 
-        // 4. رسم الخطوط بين النقاط
         ctx.shadowBlur = 0;
+        ctx.lineWidth = 1;
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
             const dx = particles[i].x - particles[j].x;
@@ -785,35 +1065,18 @@ ${
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < CONFIG.maxDistance) {
-              const alpha = (1 - dist / CONFIG.maxDistance) * 0.85;
+              const alpha = Math.pow(1 - dist / CONFIG.maxDistance, 1.4) * 0.75;
               ctx.beginPath();
               ctx.moveTo(particles[i].x, particles[i].y);
               ctx.lineTo(particles[j].x, particles[j].y);
-              ctx.strokeStyle = hexOrRgbaToAlpha(CONFIG.lineColor, alpha);
-              ctx.lineWidth = Math.max(0.4, 1.2 * (1 - dist / CONFIG.maxDistance));
+              ctx.strokeStyle = CONFIG.lineColor;
+              ctx.globalAlpha = alpha;
               ctx.stroke();
-            }
-          }
-
-          // خطوط متصلة بمؤشر الفأرة
-          if (mouse.x !== null && mouse.y !== null) {
-            const dx = particles[i].x - mouse.x;
-            const dy = particles[i].y - mouse.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < mouse.radius) {
-              const alpha = (1 - dist / mouse.radius);
-              ctx.beginPath();
-              ctx.moveTo(particles[i].x, particles[i].y);
-              ctx.lineTo(mouse.x, mouse.y);
-              ctx.strokeStyle = hexOrRgbaToAlpha(CONFIG.nodeColor, alpha * 0.9);
-              ctx.lineWidth = 1.2;
-              ctx.stroke();
+              ctx.globalAlpha = 1.0;
             }
           }
         }
 
-        // 5. رسم الجسيمات فوق الخطوط
         for (let i = 0; i < particles.length; i++) {
           particles[i].draw(ctx);
         }
@@ -821,20 +1084,51 @@ ${
         animationFrameId = requestAnimationFrame(animate);
       }
 
-      // تحويل اللون لإضافة الشفافية بدقة
-      function hexOrRgbaToAlpha(color, alpha) {
-        if (color.startsWith('#')) {
-          let hex = color.replace('#', '');
-          if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-          const r = parseInt(hex.substring(0, 2), 16);
-          const g = parseInt(hex.substring(2, 4), 16);
-          const b = parseInt(hex.substring(4, 6), 16);
-          return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + Math.min(1, Math.max(0, alpha)).toFixed(3) + ')';
+      // Physics Playground Trigger Method
+      function triggerPhysicsEffect(type) {
+        const centerX = width / 2;
+        const centerY = height / 2;
+        if (type === 'explode') {
+          particles.forEach(p => {
+            const dx = p.x - centerX;
+            const dy = p.y - centerY;
+            const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.5;
+            const force = (Math.random() * 20 + 12) * CONFIG.speed;
+            p.vx = Math.cos(angle) * force;
+            p.vy = Math.sin(angle) * force;
+          });
+        } else if (type === 'vortex') {
+          particles.forEach(p => {
+            const dx = p.x - centerX;
+            const dy = p.y - centerY;
+            const angle = Math.atan2(dy, dx);
+            p.vx = -Math.sin(angle) * 14 + (centerX - p.x) * 0.03;
+            p.vy = Math.cos(angle) * 14 + (centerY - p.y) * 0.03;
+          });
+        } else if (type === 'shockwave') {
+          particles.forEach(p => {
+            const dx = p.x - centerX;
+            const dy = p.y - centerY;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = Math.max(0, 1 - dist / (width * 0.6)) * 22;
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          });
+        } else if (type === 'zeroG') {
+          particles.forEach(p => {
+            p.vx = (Math.random() - 0.5) * 0.2;
+            p.vy = (Math.random() - 0.5) * 0.2;
+          });
+        } else if (type === 'assemble') {
+          particles.forEach(p => {
+            p.vx *= 0.05;
+            p.vy *= 0.05;
+          });
         }
-        return color;
       }
+      window.triggerPhysicsEffect = triggerPhysicsEffect;
 
-      // رصد أحداث الفأرة واللمس
+      // Mouse & Click Handlers
       window.addEventListener('mousemove', (e) => {
         mouse.x = e.clientX;
         mouse.y = e.clientY;
@@ -845,15 +1139,21 @@ ${
         mouse.y = null;
       });
 
-      // إضافة جسيم عند النقر
       window.addEventListener('click', (e) => {
-        particles.push(new Particle(e.clientX, e.clientY));
-        if (particles.length > CONFIG.particleCount + 30) {
-          particles.shift();
+        // Spawn burst of 5 particles on click
+        for (let k = 0; k < 5; k++) {
+          const p = new Particle(particles.length, e.clientX, e.clientY);
+          const angle = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 8 + 3;
+          p.vx = Math.cos(angle) * spd;
+          p.vy = Math.sin(angle) * spd;
+          particles.push(p);
+        }
+        if (particles.length > CONFIG.particleCount + 50) {
+          particles.splice(0, 5);
         }
       });
 
-      // التفاعل باللمس للشاشات الذكية
       window.addEventListener('touchmove', (e) => {
         if (e.touches.length > 0) {
           mouse.x = e.touches[0].clientX;
@@ -866,19 +1166,16 @@ ${
         mouse.y = null;
       });
 
-      // إعادة التكيف عند تغيير حجم الشاشة
       window.addEventListener('resize', () => {
         init();
       });
 
-      // البدء
       init();
       animationFrameId = requestAnimationFrame(animate);
 
 ${
   includePanel
     ? `
-      // إعدادات وتفاعل لوحة التحكم لموقعك
       const panelToggle = document.getElementById('plexus-control-toggle');
       const panel = document.getElementById('plexus-panel');
       const closeBtn = document.getElementById('plexus-close-btn');
@@ -894,7 +1191,6 @@ ${
         });
       }
 
-      // 1. عدد الجسيمات
       const particleSlider = document.getElementById('ctrl-particleCount');
       if (particleSlider) {
         particleSlider.addEventListener('input', (e) => {
@@ -912,7 +1208,6 @@ ${
         });
       }
 
-      // 2. سرعة الحركة
       const speedSlider = document.getElementById('ctrl-speed');
       if (speedSlider) {
         speedSlider.addEventListener('input', (e) => {
@@ -922,7 +1217,6 @@ ${
         });
       }
 
-      // 3. مسافة الروابط
       const distSlider = document.getElementById('ctrl-maxDistance');
       if (distSlider) {
         distSlider.addEventListener('input', (e) => {
@@ -932,7 +1226,6 @@ ${
         });
       }
 
-      // 4. حجم النقاط
       const sizeSlider = document.getElementById('ctrl-nodeSize');
       if (sizeSlider) {
         sizeSlider.addEventListener('input', (e) => {
@@ -942,29 +1235,13 @@ ${
         });
       }
 
-      // 5. تشكيل الشعار بالجسيمات
       const formLogoCheck = document.getElementById('ctrl-formLogo');
-      const formingStrengthGroup = document.getElementById('group-formingStrength');
       if (formLogoCheck) {
         formLogoCheck.addEventListener('change', (e) => {
           CONFIG.formLogoWithParticles = e.target.checked;
-          if (formingStrengthGroup) {
-            formingStrengthGroup.style.display = e.target.checked ? '' : 'none';
-          }
         });
       }
 
-      // 6. قوة انجذاب النقاط للشعار
-      const strengthSlider = document.getElementById('ctrl-logoFormingStrength');
-      if (strengthSlider) {
-        strengthSlider.addEventListener('input', (e) => {
-          CONFIG.logoFormingStrength = parseFloat(e.target.value);
-          const valDisplay = document.getElementById('val-logoFormingStrength');
-          if (valDisplay) valDisplay.textContent = Math.round(CONFIG.logoFormingStrength * 100) + '%';
-        });
-      }
-
-      // 7. المثلثات
       const trianglesCheck = document.getElementById('ctrl-showTriangles');
       if (trianglesCheck) {
         trianglesCheck.addEventListener('change', (e) => {
@@ -972,12 +1249,12 @@ ${
         });
       }
 
-      // 8. منتقي الألوان
       const nodeColorPicker = document.getElementById('ctrl-nodeColor');
       if (nodeColorPicker) {
         nodeColorPicker.addEventListener('input', (e) => {
           CONFIG.nodeColor = e.target.value;
           CONFIG.lineColor = e.target.value;
+          CONFIG.triangleFillColor = e.target.value;
         });
       }
 
@@ -987,35 +1264,7 @@ ${
           CONFIG.bgColor = e.target.value;
           document.body.style.backgroundColor = e.target.value;
         });
-      }
-
-      // 9. الثيمات السريعة
-      const presetBtns = document.querySelectorAll('.plexus-preset-btn');
-      presetBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const preset = btn.getAttribute('data-preset');
-          if (preset === 'turquoise') {
-            CONFIG.nodeColor = '#14b8a6';
-            CONFIG.lineColor = '#0d9488';
-            CONFIG.bgColor = '#03080e';
-          } else if (preset === 'gold') {
-            CONFIG.nodeColor = '#f59e0b';
-            CONFIG.lineColor = '#d97706';
-            CONFIG.bgColor = '#0a0907';
-          } else if (preset === 'cyber') {
-            CONFIG.nodeColor = '#38bdf8';
-            CONFIG.lineColor = '#0284c7';
-            CONFIG.bgColor = '#050c18';
-          } else if (preset === 'matrix') {
-            CONFIG.nodeColor = '#22c55e';
-            CONFIG.lineColor = '#16a34a';
-            CONFIG.bgColor = '#030a05';
-          }
-          document.body.style.backgroundColor = CONFIG.bgColor;
-          if (nodeColorPicker) nodeColorPicker.value = CONFIG.nodeColor;
-          if (bgColorPicker) bgColorPicker.value = CONFIG.bgColor;
-        });
-      });`
+      }`
     : ''
 }
     })();

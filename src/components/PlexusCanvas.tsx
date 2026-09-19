@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { PlexusConfig } from '../types';
+import { PlexusConfig, PlaygroundEffectType } from '../types';
 import {
   getBotanicalLogoTargetPoints,
   extractLogoPointsFromImage,
@@ -8,10 +8,13 @@ import {
 interface PlexusCanvasProps {
   config: PlexusConfig;
   onParticleCountChange?: (count: number) => void;
+  effectTrigger?: { type: PlaygroundEffectType; timestamp: number } | null;
 }
 
-export const PlexusCanvas: React.FC<PlexusCanvasProps> = ({ config }) => {
+export const PlexusCanvas: React.FC<PlexusCanvasProps> = ({ config, effectTrigger }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const particlesRef = useRef<any[]>([]);
+  const lastEffectTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -239,6 +242,7 @@ export const PlexusCanvas: React.FC<PlexusCanvasProps> = ({ config }) => {
     for (let i = 0; i < config.particleCount; i++) {
       particles.push(new Particle(i));
     }
+    particlesRef.current = particles;
 
     const animate = (time: number) => {
       ctx.clearRect(0, 0, width, height);
@@ -360,10 +364,17 @@ export const PlexusCanvas: React.FC<PlexusCanvasProps> = ({ config }) => {
       const rect = canvas.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
-      // Add particle
-      particles.push(new Particle(clickX, clickY));
-      if (particles.length > config.particleCount + 40) {
-        particles.shift();
+      // Spawn a burst of 5 particles with explosive velocities
+      for (let k = 0; k < 5; k++) {
+        const p = new Particle(particles.length, clickX, clickY);
+        const burstAngle = Math.random() * Math.PI * 2;
+        const burstSpeed = (Math.random() * 6 + 3) * config.speed;
+        p.vx = Math.cos(burstAngle) * burstSpeed;
+        p.vy = Math.sin(burstAngle) * burstSpeed;
+        particles.push(p);
+      }
+      if (particles.length > config.particleCount + 60) {
+        particles.splice(0, 5);
       }
     };
 
@@ -397,6 +408,84 @@ export const PlexusCanvas: React.FC<PlexusCanvasProps> = ({ config }) => {
       canvas.removeEventListener('touchend', onTouchEnd);
     };
   }, [config]);
+
+  // Handle Interactive Physics Playground Triggers
+  useEffect(() => {
+    if (!effectTrigger || effectTrigger.timestamp === lastEffectTimeRef.current) return;
+    lastEffectTimeRef.current = effectTrigger.timestamp;
+
+    const particles = particlesRef.current;
+    if (!particles || particles.length === 0) return;
+
+    const canvas = canvasRef.current;
+    const width = canvas ? canvas.clientWidth : window.innerWidth;
+    const height = canvas ? canvas.clientHeight : window.innerHeight;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    switch (effectTrigger.type) {
+      case 'explode':
+        particles.forEach((p) => {
+          const dx = p.x - centerX;
+          const dy = p.y - centerY;
+          const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.5;
+          const force = (Math.random() * 20 + 12) * config.speed;
+          p.vx = Math.cos(angle) * force;
+          p.vy = Math.sin(angle) * force;
+        });
+        break;
+
+      case 'vortex':
+        particles.forEach((p) => {
+          const dx = p.x - centerX;
+          const dy = p.y - centerY;
+          const angle = Math.atan2(dy, dx);
+          p.vx = -Math.sin(angle) * 14 + (centerX - p.x) * 0.03;
+          p.vy = Math.cos(angle) * 14 + (centerY - p.y) * 0.03;
+        });
+        break;
+
+      case 'shockwave':
+        particles.forEach((p) => {
+          const dx = p.x - centerX;
+          const dy = p.y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = Math.max(0, 1 - dist / (width * 0.6)) * 22;
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+        });
+        break;
+
+      case 'zeroG':
+        particles.forEach((p) => {
+          p.vx = (Math.random() - 0.5) * 0.2;
+          p.vy = (Math.random() - 0.5) * 0.2;
+        });
+        break;
+
+      case 'assemble':
+        particles.forEach((p) => {
+          p.vx *= 0.05;
+          p.vy *= 0.05;
+        });
+        break;
+
+      case 'spawn':
+        for (let k = 0; k < 6; k++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 8 + 3;
+          const p = new (particles[0]?.constructor || Object)(
+            particles.length,
+            centerX + Math.cos(angle) * 30,
+            centerY + Math.sin(angle) * 30
+          );
+          p.vx = Math.cos(angle) * speed;
+          p.vy = Math.sin(angle) * speed;
+          particles.push(p);
+        }
+        break;
+    }
+  }, [effectTrigger, config.speed]);
 
   return (
     <canvas

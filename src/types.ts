@@ -1,3 +1,34 @@
+export interface FeatureItem {
+  id: string;
+  title: string;
+  desc: string;
+  icon: string;
+}
+
+export interface StatItem {
+  id: string;
+  value: string;
+  label: string;
+}
+
+export interface WebsiteConfig {
+  siteName: string;
+  tagline: string;
+  heroBadge: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  ctaPrimaryText: string;
+  ctaSecondaryText: string;
+  showNavbar: boolean;
+  showFeatures: boolean;
+  showStats: boolean;
+  showFooter: boolean;
+  features: FeatureItem[];
+  stats: StatItem[];
+  deviceView: 'desktop' | 'tablet' | 'mobile' | 'fullscreen';
+  currentPage: 'home' | 'game';
+}
+
 export interface PlexusConfig {
   particleCount: number;
   maxDistance: number;
@@ -26,6 +57,8 @@ export interface PlexusConfig {
   formLogoWithParticles: boolean;
   logoFormingStrength: number; // 0.1 to 1 (قوة انجذاب النقاط لتشكل الشعار)
 }
+
+export type PlaygroundEffectType = 'explode' | 'vortex' | 'shockwave' | 'zeroG' | 'assemble' | 'spawn';
 
 export interface PresetTheme {
   id: string;

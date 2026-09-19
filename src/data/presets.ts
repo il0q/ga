@@ -1,4 +1,47 @@
-import { PlexusConfig, PresetTheme } from '../types';
+import { PlexusConfig, PresetTheme, WebsiteConfig } from '../types';
+
+export const DEFAULT_WEBSITE_CONFIG: WebsiteConfig = {
+  siteName: 'نـكـسـس تـك',
+  tagline: 'منصة الأنظمة الذكية والحلول المستقبلية',
+  heroBadge: '✨ النسخة التفاعلية الجديدة 2026',
+  heroTitle: 'آفاق لا محدودة لتقنيات المستقبل الذكية',
+  heroSubtitle:
+    'نبني الجيل القادم من الأنظمة البرمجية المترابطة وشبكات الذكاء الاصطناعي الفائقة مع تجربة بصرية مذهلة ومخصصة بالكامل.',
+  ctaPrimaryText: 'ابدأ تجربتك المجانية',
+  ctaSecondaryText: 'استكشف المميزات',
+  showNavbar: true,
+  showFeatures: true,
+  showStats: true,
+  showFooter: true,
+  features: [
+    {
+      id: 'f1',
+      title: 'شبكة عصبية متصلة',
+      desc: 'بنية تحتية سحابية موزعة ذاتياً مع ربط ذكي فائق السرعة للبيانات.',
+      icon: 'Cpu',
+    },
+    {
+      id: 'f2',
+      title: 'حماية وتشفير متقدم',
+      desc: 'تأمين فوري ومراقبة مستمرة مع تشفير كمومي متعدد الطبقات.',
+      icon: 'ShieldCheck',
+    },
+    {
+      id: 'f3',
+      title: 'سرعة أداء فائقة',
+      desc: 'استجابة برمجية في أجزاء من الثانية مع تجربة مستخدم انسيابية.',
+      icon: 'Zap',
+    },
+  ],
+  stats: [
+    { id: 's1', value: '99.99%', label: 'استقرار النظام' },
+    { id: 's2', value: '+150K', label: 'مستخدم نشط' },
+    { id: 's3', value: '0.4ms', label: 'زمن الاستجابة' },
+    { id: 's4', value: '24/7', label: 'دعم فني فوري' },
+  ],
+  deviceView: 'desktop',
+  currentPage: 'home',
+};
 
 export const DEFAULT_CONFIG: PlexusConfig = {
   particleCount: 105,
