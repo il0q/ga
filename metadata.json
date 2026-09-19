@@ -1,0 +1,6 @@
+{
+  "name": "Plexus HTML Generator",
+  "description": "تأثير شبكة الجسيمات الهندسية التفاعلية مع مولد كود HTML خالص جاهز للنسخ والتضمين في أي موقع.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
